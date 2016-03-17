@@ -20,11 +20,12 @@ from ..utils import deprecated
 from ..utils.extmath import row_norms
 from ..utils.extmath import _incremental_mean_and_var
 from ..utils.fixes import combinations_with_replacement as combinations_w_r
+from ..utils.fixes import bincount
 from ..utils.sparsefuncs_fast import (inplace_csr_row_normalize_l1,
                                       inplace_csr_row_normalize_l2)
 from ..utils.sparsefuncs import (inplace_column_scale,
                                  mean_variance_axis, incr_mean_variance_axis,
-                                 min_max_axis, inplace_row_scale)
+                                 min_max_axis)
 from ..utils.validation import check_is_fitted, FLOAT_DTYPES
 
 
@@ -103,7 +104,7 @@ def scale(X, axis=0, with_mean=True, with_std=True, copy=True):
     copy : boolean, optional, default True
         set to False to perform inplace row normalization and avoid a
         copy (if the input is already a numpy array or a scipy.sparse
-        CSR matrix and if axis is 1).
+        CSC matrix and if axis is 1).
 
     Notes
     -----
@@ -113,10 +114,10 @@ def scale(X, axis=0, with_mean=True, with_std=True, copy=True):
 
     Instead the caller is expected to either set explicitly
     `with_mean=False` (in that case, only variance scaling will be
-    performed on the features of the CSR matrix) or to call `X.toarray()`
+    performed on the features of the CSC matrix) or to call `X.toarray()`
     if he/she expects the materialized dense array to fit in memory.
 
-    To avoid memory copy the caller should pass a CSR matrix.
+    To avoid memory copy the caller should pass a CSC matrix.
 
     See also
     --------
@@ -124,7 +125,7 @@ def scale(X, axis=0, with_mean=True, with_std=True, copy=True):
     scaling using the ``Transformer`` API (e.g. as part of a preprocessing
     :class:`sklearn.pipeline.Pipeline`)
     """
-    X = check_array(X, accept_sparse='csr', copy=copy, ensure_2d=False,
+    X = check_array(X, accept_sparse='csc', copy=copy, ensure_2d=False,
                     warn_on_dtype=True, estimator='the scale function',
                     dtype=FLOAT_DTYPES)
     if sparse.issparse(X):
@@ -135,11 +136,6 @@ def scale(X, axis=0, with_mean=True, with_std=True, copy=True):
         if axis != 0:
             raise ValueError("Can only scale sparse matrix on axis=0, "
                              " got axis=%d" % axis)
-        if not sparse.isspmatrix_csr(X):
-            X = X.tocsr()
-            copy = False
-        if copy:
-            X = X.copy()
         if with_std:
             _, var = mean_variance_axis(X, axis=0)
             var = _handle_zeros_in_scale(var, copy=False)
@@ -150,8 +146,6 @@ def scale(X, axis=0, with_mean=True, with_std=True, copy=True):
             mean_ = np.mean(X, axis)
         if with_std:
             scale_ = np.std(X, axis)
-        if copy:
-            X = X.copy()
         # Xr is a view on the original array that enables easy use of
         # broadcasting on the axis in which we are interested in
         Xr = np.rollaxis(X, axis)
@@ -179,7 +173,7 @@ def scale(X, axis=0, with_mean=True, with_std=True, copy=True):
                 # scale_ is very small so that mean_2 = mean_1/scale_ > 0, even
                 # if mean_1 was close to zero. The problem is thus essentially
                 # due to the lack of precision of mean_. A solution is then to
-                # substract the mean again:
+                # subtract the mean again:
                 if not np.allclose(mean_2, 0):
                     warnings.warn("Numerical issues were encountered "
                                   "when scaling the data "
@@ -226,14 +220,26 @@ class MinMaxScaler(BaseEstimator, TransformerMixin):
     scale_ : ndarray, shape (n_features,)
         Per feature relative scaling of the data.
 
+        .. versionadded:: 0.17
+           *scale_* attribute.
+
     data_min_ : ndarray, shape (n_features,)
         Per feature minimum seen in the data
+
+        .. versionadded:: 0.17
+           *data_min_* instead of deprecated *data_min*.
 
     data_max_ : ndarray, shape (n_features,)
         Per feature maximum seen in the data
 
+        .. versionadded:: 0.17
+           *data_max_* instead of deprecated *data_max*.
+
     data_range_ : ndarray, shape (n_features,)
-        Per feature range (data_max_ - data_min_) seen in the data
+        Per feature range ``(data_max_ - data_min_)`` seen in the data
+
+        .. versionadded:: 0.17
+           *data_range_* instead of deprecated *data_range*.
     """
 
     def __init__(self, feature_range=(0, 1), copy=True):
@@ -242,13 +248,13 @@ class MinMaxScaler(BaseEstimator, TransformerMixin):
 
     @property
     @deprecated("Attribute data_range will be removed in "
-                "0.19. Use data_range_ instead")
+                "0.19. Use ``data_range_`` instead")
     def data_range(self):
         return self.data_range_
 
     @property
     @deprecated("Attribute data_min will be removed in "
-                "0.19. Use data_min_ instead")
+                "0.19. Use ``data_min_`` instead")
     def data_min(self):
         return self.data_min_
 
@@ -290,7 +296,7 @@ class MinMaxScaler(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : array-like, shape [n_samples_, n_features]
+        X : array-like, shape [n_samples, n_features]
             The data used to compute the mean and standard deviation
             used for later scaling along the features axis.
 
@@ -388,6 +394,9 @@ def minmax_scale(X, feature_range=(0, 1), axis=0, copy=True):
 
     Read more in the :ref:`User Guide <preprocessing_scaler>`.
 
+    .. versionadded:: 0.17
+       *minmax_scale* function interface to :class:`sklearn.preprocessing.MinMaxScaler`.
+
     Parameters
     ----------
     feature_range: tuple (min, max), default=(0, 1)
@@ -478,6 +487,9 @@ class StandardScaler(BaseEstimator, TransformerMixin):
     scale_ : ndarray, shape (n_features,)
         Per feature relative scaling of the data.
 
+        .. versionadded:: 0.17
+           *scale_* is recommended instead of deprecated *std_*.
+
     mean_ : array of floats with shape [n_features]
         The mean value for each feature in the training set.
 
@@ -504,7 +516,7 @@ class StandardScaler(BaseEstimator, TransformerMixin):
         self.copy = copy
 
     @property
-    @deprecated("Attribute std_ will be removed in 0.19. Use scale_ instead")
+    @deprecated("Attribute ``std_`` will be removed in 0.19. Use ``scale_`` instead")
     def std_(self):
         return self.scale_
 
@@ -551,7 +563,7 @@ class StandardScaler(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : {array-like, sparse matrix}, shape [n_samples_, n_features]
+        X : {array-like, sparse matrix}, shape [n_samples, n_features]
             The data used to compute the mean and standard deviation
             used for later scaling along the features axis.
 
@@ -685,6 +697,8 @@ class MaxAbsScaler(BaseEstimator, TransformerMixin):
 
     This scaler can also be applied to sparse CSR or CSC matrices.
 
+    .. versionadded:: 0.17
+
     Parameters
     ----------
     copy : boolean, optional, default is True
@@ -695,6 +709,9 @@ class MaxAbsScaler(BaseEstimator, TransformerMixin):
     ----------
     scale_ : ndarray, shape (n_features,)
         Per feature relative scaling of the data.
+
+        .. versionadded:: 0.17
+           *scale_* attribute.
 
     max_abs_ : ndarray, shape (n_features,)
         Per feature maximum absolute value.
@@ -742,7 +759,7 @@ class MaxAbsScaler(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : {array-like, sparse matrix}, shape [n_samples_, n_features]
+        X : {array-like, sparse matrix}, shape [n_samples, n_features]
             The data used to compute the mean and standard deviation
             used for later scaling along the features axis.
 
@@ -879,6 +896,8 @@ class RobustScaler(BaseEstimator, TransformerMixin):
     sample mean / variance in a negative way. In such cases, the median and
     the interquartile range often give better results.
 
+    .. versionadded:: 0.17
+
     Read more in the :ref:`User Guide <preprocessing_scaler>`.
 
     Parameters
@@ -906,6 +925,9 @@ class RobustScaler(BaseEstimator, TransformerMixin):
 
     scale_ : array of floats
         The (scaled) interquartile range for each feature in the training set.
+
+        .. versionadded:: 0.17
+           *scale_* attribute.
 
     See also
     --------
@@ -984,10 +1006,7 @@ class RobustScaler(BaseEstimator, TransformerMixin):
 
         if sparse.issparse(X):
             if self.with_scaling:
-                if X.shape[0] == 1:
-                    inplace_row_scale(X, 1.0 / self.scale_)
-                elif self.axis == 0:
-                    inplace_column_scale(X, 1.0 / self.scale_)
+                inplace_column_scale(X, 1.0 / self.scale_)
         else:
             if self.with_centering:
                 X -= self.center_
@@ -1013,10 +1032,7 @@ class RobustScaler(BaseEstimator, TransformerMixin):
 
         if sparse.issparse(X):
             if self.with_scaling:
-                if X.shape[0] == 1:
-                    inplace_row_scale(X, self.scale_)
-                else:
-                    inplace_column_scale(X, self.scale_)
+                inplace_column_scale(X, self.scale_)
         else:
             if self.with_scaling:
                 X *= self.scale_
@@ -1125,7 +1141,7 @@ class PolynomialFeatures(BaseEstimator, TransformerMixin):
 
     Attributes
     ----------
-    powers_ : array, shape (n_input_features, n_output_features)
+    powers_ : array, shape (n_output_features, n_input_features)
         powers_[i, j] is the exponent of the jth input in the ith output.
 
     n_input_features_ : int
@@ -1164,8 +1180,38 @@ class PolynomialFeatures(BaseEstimator, TransformerMixin):
         combinations = self._combinations(self.n_input_features_, self.degree,
                                           self.interaction_only,
                                           self.include_bias)
-        return np.vstack(np.bincount(c, minlength=self.n_input_features_)
+        return np.vstack(bincount(c, minlength=self.n_input_features_)
                          for c in combinations)
+
+    def get_feature_names(self, input_features=None):
+        """
+        Return feature names for output features
+
+        Parameters
+        ----------
+        input_features : list of string, length n_features, optional
+            String names for input features if available. By default,
+            "x0", "x1", ... "xn_features" is used.
+
+        Returns
+        -------
+        output_feature_names : list of string, length n_output_features
+
+        """
+        powers = self.powers_
+        if input_features is None:
+            input_features = ['x%d' % i for i in range(powers.shape[1])]
+        feature_names = []
+        for row in powers:
+            inds = np.where(row)[0]
+            if len(inds):
+                name = " ".join("%s^%d" % (input_features[ind], exp)
+                                if exp != 1 else input_features[ind]
+                                for ind, exp in zip(inds, row[inds]))
+            else:
+                name = "1"
+            feature_names.append(name)
+        return feature_names
 
     def fit(self, X, y=None):
         """
@@ -1213,7 +1259,7 @@ class PolynomialFeatures(BaseEstimator, TransformerMixin):
         return XP
 
 
-def normalize(X, norm='l2', axis=1, copy=True):
+def normalize(X, norm='l2', axis=1, copy=True, return_norm=False):
     """Scale input vectors individually to unit norm (vector length).
 
     Read more in the :ref:`User Guide <preprocessing_normalization>`.
@@ -1237,6 +1283,9 @@ def normalize(X, norm='l2', axis=1, copy=True):
         set to False to perform inplace row normalization and avoid a
         copy (if the input is already a numpy array or a scipy.sparse
         CSR matrix and if axis is 1).
+
+    return_norm : boolean, default False
+        whether to return the computed norms
 
     See also
     --------
@@ -1282,7 +1331,10 @@ def normalize(X, norm='l2', axis=1, copy=True):
     if axis == 0:
         X = X.T
 
-    return X
+    if return_norm:
+        return X, norms
+    else:
+        return X
 
 
 class Normalizer(BaseEstimator, TransformerMixin):
@@ -1650,8 +1702,10 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
         Number of values per feature.
 
         - 'auto' : determine value range from training data.
-        - int : maximum value for all features.
-        - array : maximum value per feature.
+        - int : number of categorical values per feature.
+                Each feature value should be in ``range(n_values)``
+        - array : ``n_values[i]`` is the number of categorical values in
+                  ``X[:, i]``. Each feature value should be in ``range(n_values[i])``
 
     categorical_features: "all" or array of indices or mask
         Specify what features are treated as categorical.
@@ -1816,7 +1870,7 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
                                  "unknown got %s" % self.handle_unknown)
             if self.handle_unknown == 'error':
                 raise ValueError("unknown categorical feature present %s "
-                                 "during transform." % X[~mask])
+                                 "during transform." % X.ravel()[~mask])
 
         column_indices = (X + indices[:-1]).ravel()[mask]
         row_indices = np.repeat(np.arange(n_samples, dtype=np.int32),

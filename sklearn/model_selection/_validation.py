@@ -66,7 +66,7 @@ def cross_val_score(estimator, X, y=None, labels=None, scoring=None, cv=None,
                     pre_dispatch='2*n_jobs'):
     """Evaluate a score by cross-validation
 
-    Read more in the :ref:`User Guide <validate>`.
+    Read more in the :ref:`User Guide <cross_validation>`.
 
     Parameters
     ----------
@@ -97,13 +97,12 @@ def cross_val_score(estimator, X, y=None, labels=None, scoring=None, cv=None,
           - An object to be used as a cross-validation generator.
           - An iterable yielding train, test splits.
 
-        For integer/None inputs, ``StratifiedKFold`` is used for classification
-        tasks, when ``y`` is binary or multiclass.
+        For integer/None inputs, if the estimator is a classifier and ``y`` is
+        either binary or multiclass, :class:`StratifiedKFold` used. In all
+        other cases, :class:`KFold` is used.
 
-        See the :mod:`sklearn.model_selection` module for the list of
+        Refer :ref:`User Guide <cross_validation>` for the various
         cross-validation strategies that can be used here.
-
-        Also refer :ref:`cross-validation documentation <cross_validation>`
 
     n_jobs : integer, optional
         The number of CPUs to use to do the computation. -1 means
@@ -295,7 +294,7 @@ def cross_val_predict(estimator, X, y=None, labels=None, cv=None, n_jobs=1,
                       verbose=0, fit_params=None, pre_dispatch='2*n_jobs'):
     """Generate cross-validated estimates for each input data point
 
-    Read more in the :ref:`User Guide <validate>`.
+    Read more in the :ref:`User Guide <cross_validation>`.
 
     Parameters
     ----------
@@ -321,13 +320,12 @@ def cross_val_predict(estimator, X, y=None, labels=None, cv=None, n_jobs=1,
           - An object to be used as a cross-validation generator.
           - An iterable yielding train, test splits.
 
-        For integer/None inputs, ``StratifiedKFold`` is used for classification
-        tasks, when ``y`` is binary or multiclass.
+        For integer/None inputs, if the estimator is a classifier and ``y`` is
+        either binary or multiclass, :class:`StratifiedKFold` used. In all
+        other cases, :class:`KFold` is used.
 
-        See the :mod:`sklearn.model_selection` module for the list of
+        Refer :ref:`User Guide <cross_validation>` for the various
         cross-validation strategies that can be used here.
-
-        Also refer :ref:`cross-validation documentation <_cross_validation>`
 
     n_jobs : integer, optional
         The number of CPUs to use to do the computation. -1 means
@@ -394,7 +392,7 @@ def cross_val_predict(estimator, X, y=None, labels=None, cv=None, n_jobs=1,
 def _fit_and_predict(estimator, X, y, train, test, verbose, fit_params):
     """Fit estimator and predict values for a given dataset split.
 
-    Read more in the :ref:`User Guide <validate>`.
+    Read more in the :ref:`User Guide <cross_validation>`.
 
     Parameters
     ----------
@@ -483,7 +481,7 @@ def permutation_test_score(estimator, X, y, labels=None, cv=None,
                            verbose=0, scoring=None):
     """Evaluate the significance of a cross-validated score with permutations
 
-    Read more in the :ref:`User Guide <validate>`.
+    Read more in the :ref:`User Guide <cross_validation>`.
 
     Parameters
     ----------
@@ -514,13 +512,12 @@ def permutation_test_score(estimator, X, y, labels=None, cv=None,
           - An object to be used as a cross-validation generator.
           - An iterable yielding train, test splits.
 
-        For integer/None inputs, ``StratifiedKFold`` is used for classification
-        tasks, when ``y`` is binary or multiclass.
+        For integer/None inputs, if the estimator is a classifier and ``y`` is
+        either binary or multiclass, :class:`StratifiedKFold` used. In all
+        other cases, :class:`KFold` is used.
 
-        See the :mod:`sklearn.model_selection` module for the list of
+        Refer :ref:`User Guide <cross_validation>` for the various
         cross-validation strategies that can be used here.
-
-        Also refer :ref:`cross-validation documentation <_cross_validation>`
 
     n_permutations : integer, optional
         Number of times to permute ``y``.
@@ -618,7 +615,7 @@ def learning_curve(estimator, X, y, labels=None,
     test set will be computed. Afterwards, the scores will be averaged over
     all k runs for each training subset size.
 
-    Read more in the :ref:`User Guide <validate>`.
+    Read more in the :ref:`User Guide <learning_curve>`.
 
     Parameters
     ----------
@@ -655,13 +652,12 @@ def learning_curve(estimator, X, y, labels=None,
           - An object to be used as a cross-validation generator.
           - An iterable yielding train, test splits.
 
-        For integer/None inputs, ``StratifiedKFold`` is used for classification
-        tasks, when ``y`` is binary or multiclass.
+        For integer/None inputs, if the estimator is a classifier and ``y`` is
+        either binary or multiclass, :class:`StratifiedKFold` used. In all
+        other cases, :class:`KFold` is used.
 
-        See the :mod:`sklearn.model_selection` module for the list of
+        Refer :ref:`User Guide <cross_validation>` for the various
         cross-validation strategies that can be used here.
-
-        Also refer :ref:`cross-validation documentation <_cross_validation>`
 
     scoring : string, callable or None, optional, default: None
         A string (see model evaluation documentation) or
@@ -836,7 +832,7 @@ def validation_curve(estimator, X, y, param_name, param_range, labels=None,
     will also compute training scores and is merely a utility for plotting the
     results.
 
-    Read more in the :ref:`User Guide <validate>`.
+    Read more in the :ref:`User Guide <learning_curve>`.
 
     Parameters
     ----------
@@ -869,13 +865,12 @@ def validation_curve(estimator, X, y, param_name, param_range, labels=None,
           - An object to be used as a cross-validation generator.
           - An iterable yielding train, test splits.
 
-        For integer/None inputs, ``StratifiedKFold`` is used for classification
-        tasks, when ``y`` is binary or multiclass.
+        For integer/None inputs, if the estimator is a classifier and ``y`` is
+        either binary or multiclass, :class:`StratifiedKFold` used. In all
+        other cases, :class:`KFold` is used.
 
-        See the :mod:`sklearn.model_selection` module for the list of
+        Refer :ref:`User Guide <cross_validation>` for the various
         cross-validation strategies that can be used here.
-
-        Also refer :ref:`cross-validation documentation <_cross_validation>`
 
     scoring : string, callable or None, optional, default: None
         A string (see model evaluation documentation) or

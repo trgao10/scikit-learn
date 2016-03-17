@@ -34,7 +34,7 @@ MAX_INT = np.iinfo(np.int32).max
 
 
 def _parallel_build_estimators(n_estimators, ensemble, X, y, sample_weight,
-                               max_samples, seeds, verbose):
+                               max_samples, seeds, total_n_estimators, verbose):
     """Private function used to build a batch of estimators within a job."""
     # Retrieve settings
     n_samples, n_features = X.shape
@@ -62,7 +62,8 @@ def _parallel_build_estimators(n_estimators, ensemble, X, y, sample_weight,
 
     for i in range(n_estimators):
         if verbose > 1:
-            print("building estimator %d of %d" % (i + 1, n_estimators))
+            print("Building estimator %d of %d for this parallel run (total %d)..." %
+                  (i + 1, n_estimators, total_n_estimators))
 
         random_state = check_random_state(seeds[i])
         seed = random_state.randint(MAX_INT)
@@ -248,9 +249,9 @@ class BaseBagging(with_metaclass(ABCMeta, BaseEnsemble)):
         self : object
             Returns self.
         """
-        return self._fit(X, y, self.max_samples, sample_weight)
+        return self._fit(X, y, self.max_samples, sample_weight=sample_weight)
 
-    def _fit(self, X, y, max_samples, sample_weight=None):
+    def _fit(self, X, y, max_samples, max_depth=None, sample_weight=None):
         """Build a Bagging ensemble of estimators from the training
            set (X, y).
 
@@ -266,6 +267,10 @@ class BaseBagging(with_metaclass(ABCMeta, BaseEnsemble)):
 
         max_samples : int or float, optional (default=None)
             Argument to use instead of self.max_samples.
+
+        max_depth : int, optional (default=None)
+            Override value used when constructing base estimator. Only
+            supported if the base estimator has a max_depth parameter.
 
         sample_weight : array-like, shape = [n_samples] or None
             Sample weights. If None, then samples are equally weighted.
@@ -289,9 +294,12 @@ class BaseBagging(with_metaclass(ABCMeta, BaseEnsemble)):
         # Check parameters
         self._validate_estimator()
 
+        if max_depth is not None:
+            self.base_estimator_.max_depth = max_depth
+
         # if max_samples is float:
         if not isinstance(max_samples, (numbers.Integral, np.integer)):
-            max_samples = int(self.max_samples * X.shape[0])
+            max_samples = int(max_samples * X.shape[0])
 
         if not (0 < max_samples <= X.shape[0]):
             raise ValueError("max_samples must be in (0, n_samples]")
@@ -336,6 +344,7 @@ class BaseBagging(with_metaclass(ABCMeta, BaseEnsemble)):
         # Parallel loop
         n_jobs, n_estimators, starts = _partition_estimators(n_more_estimators,
                                                              self.n_jobs)
+        total_n_estimators = sum(n_estimators)
 
         # Advance random state to state after training
         # the first n_estimators
@@ -353,6 +362,7 @@ class BaseBagging(with_metaclass(ABCMeta, BaseEnsemble)):
                 sample_weight,
                 max_samples,
                 seeds[starts[i]:starts[i + 1]],
+                total_n_estimators,
                 verbose=self.verbose)
             for i in range(n_jobs))
 
@@ -434,6 +444,9 @@ class BaggingClassifier(BaseBagging, ClassifierMixin):
         and add more estimators to the ensemble, otherwise, just fit
         a whole new ensemble.
 
+        .. versionadded:: 0.17
+           *warm_start* constructor parameter.
+
     n_jobs : int, optional (default=1)
         The number of jobs to run in parallel for both `fit` and `predict`.
         If -1, then the number of jobs is set to the number of cores.
@@ -449,7 +462,7 @@ class BaggingClassifier(BaseBagging, ClassifierMixin):
 
     Attributes
     ----------
-    base_estimator_ : list of estimators
+    base_estimator_ : estimator
         The base estimator from which the ensemble is grown.
 
     estimators_ : list of estimators
@@ -600,7 +613,7 @@ class BaggingClassifier(BaseBagging, ClassifierMixin):
         the mean predicted class probabilities of the base estimators in the
         ensemble. If base estimators do not implement a ``predict_proba``
         method, then it resorts to voting and the predicted class probabilities
-        of a an input sample represents the proportion of estimators predicting
+        of an input sample represents the proportion of estimators predicting
         each class.
 
         Parameters

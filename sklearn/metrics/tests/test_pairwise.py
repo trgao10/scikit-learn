@@ -111,7 +111,7 @@ def test_pairwise_distances():
     assert_raises(TypeError, pairwise_distances, X, Y_sparse,
                   metric="minkowski")
 
-    # Test that a value error is raised if the metric is unkown
+    # Test that a value error is raised if the metric is unknown
     assert_raises(ValueError, pairwise_distances, X, Y, metric="blah")
 
 
@@ -233,8 +233,7 @@ def test_pairwise_kernels():    # Test the pairwise_kernels helper function.
         assert_array_almost_equal(K1, K2)
     # Test with a callable function, with given keywords.
     metric = callable_rbf_kernel
-    kwds = {}
-    kwds['gamma'] = 0.1
+    kwds = {'gamma': 0.1}
     K1 = pairwise_kernels(X, Y=Y, metric=metric, **kwds)
     K2 = rbf_kernel(X, Y=Y, **kwds)
     assert_array_almost_equal(K1, K2)
@@ -271,7 +270,7 @@ def test_paired_distances():
         S3 = func(csr_matrix(X), csr_matrix(Y))
         assert_array_almost_equal(S, S3)
         if metric in PAIRWISE_DISTANCE_FUNCTIONS:
-            # Check the the pairwise_distances implementation
+            # Check the pairwise_distances implementation
             # gives the same value
             distances = PAIRWISE_DISTANCE_FUNCTIONS[metric](X, Y)
             distances = np.diag(distances)

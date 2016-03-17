@@ -306,14 +306,16 @@ def test_roc_curve_toydata():
 
     y_true = [0, 0]
     y_score = [0.25, 0.75]
-    tpr, fpr, _ = roc_curve(y_true, y_score)
+    # assert UndefinedMetricWarning because of no positive sample in y_true
+    tpr, fpr, _ = assert_warns(UndefinedMetricWarning, roc_curve, y_true, y_score)
     assert_raises(ValueError, roc_auc_score, y_true, y_score)
     assert_array_almost_equal(tpr, [0., 0.5, 1.])
     assert_array_almost_equal(fpr, [np.nan, np.nan, np.nan])
 
     y_true = [1, 1]
     y_score = [0.25, 0.75]
-    tpr, fpr, _ = roc_curve(y_true, y_score)
+    # assert UndefinedMetricWarning because of no negative sample in y_true
+    tpr, fpr, _ = assert_warns(UndefinedMetricWarning, roc_curve, y_true, y_score)
     assert_raises(ValueError, roc_auc_score, y_true, y_score)
     assert_array_almost_equal(tpr, [np.nan, np.nan])
     assert_array_almost_equal(fpr, [0.5, 1.])
@@ -721,7 +723,7 @@ def check_lrap_error_raised(lrap_score):
     assert_raises(ValueError, lrap_score, [(0), (1), (2)],
                   [[0.25, 0.75, 0.0], [0.7, 0.3, 0.0], [0.8, 0.2, 0.0]])
 
-    # Check that that y_true.shape != y_score.shape raise the proper exception
+    # Check that y_true.shape != y_score.shape raise the proper exception
     assert_raises(ValueError, lrap_score, [[0, 1], [0, 1]], [0, 1])
     assert_raises(ValueError, lrap_score, [[0, 1], [0, 1]], [[0, 1]])
     assert_raises(ValueError, lrap_score, [[0, 1], [0, 1]], [[0], [1]])
@@ -969,7 +971,7 @@ def test_label_ranking_loss():
 
 
 def test_ranking_appropriate_input_shape():
-    # Check that that y_true.shape != y_score.shape raise the proper exception
+    # Check that y_true.shape != y_score.shape raise the proper exception
     assert_raises(ValueError, label_ranking_loss, [[0, 1], [0, 1]], [0, 1])
     assert_raises(ValueError, label_ranking_loss, [[0, 1], [0, 1]], [[0, 1]])
     assert_raises(ValueError, label_ranking_loss,

@@ -624,7 +624,6 @@ class GaussianProcess(BaseEstimator, RegressorMixin):
             # 0.7. The economy transform will then be available through the
             # mode='economic' argument.
             Q, G = linalg.qr(Ft, mode='economic')
-            pass
 
         sv = linalg.svd(G, compute_uv=False)
         rcondG = sv[-1] / sv[0]
@@ -765,7 +764,7 @@ class GaussianProcess(BaseEstimator, RegressorMixin):
 
         elif self.optimizer == 'Welch':
 
-            # Backup of the given atrributes
+            # Backup of the given attributes
             theta0, thetaL, thetaU = self.theta0, self.thetaL, self.thetaU
             corr = self.corr
             verbose = self.verbose
@@ -805,7 +804,7 @@ class GaussianProcess(BaseEstimator, RegressorMixin):
                 optimal_theta[0, i], optimal_rlf_value, optimal_par = \
                     self._arg_max_reduced_likelihood_function()
 
-            # Restore the given atrributes
+            # Restore the given attributes
             self.theta0, self.thetaL, self.thetaU = theta0, thetaL, thetaU
             self.corr = corr
             self.optimizer = 'Welch'

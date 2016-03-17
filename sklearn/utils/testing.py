@@ -16,6 +16,7 @@ import warnings
 import sys
 import re
 import platform
+import struct
 
 import scipy as sp
 import scipy.io
@@ -110,7 +111,7 @@ except ImportError:
                                   callable_obj.__name__))
 
 # assert_raises_regexp is deprecated in Python 3.4 in favor of
-# assert_raises_regex but lets keep the bacward compat in scikit-learn with
+# assert_raises_regex but lets keep the backward compat in scikit-learn with
 # the old name for now
 assert_raises_regexp = assert_raises_regex
 
@@ -529,7 +530,7 @@ def uninstall_mldata_mock():
 
 
 # Meta estimators need another estimator to be instantiated.
-META_ESTIMATORS = ["OneVsOneClassifier",
+META_ESTIMATORS = ["OneVsOneClassifier", "MultiOutputRegressor",
                    "OutputCodeClassifier", "OneVsRestClassifier", "RFE",
                    "RFECV", "BaseEnsemble"]
 # estimators that there is no way to default-construct sensibly
@@ -686,6 +687,18 @@ def if_matplotlib(func):
     return run_test
 
 
+def skip_if_32bit(func):
+    """Test decorator that skips tests on 32bit platforms."""
+    @wraps(func)
+    def run_test(*args, **kwargs):
+        bits = 8 * struct.calcsize("P")
+        if bits == 32:
+            raise SkipTest('Test skipped on 32bit platforms.')
+        else:
+            return func(*args, **kwargs)
+    return run_test
+
+
 def if_not_mac_os(versions=('10.7', '10.8', '10.9'),
                   message='Multi-process bug in Mac OS X >= 10.7 '
                           '(see issue #636)'):
@@ -711,26 +724,28 @@ def if_not_mac_os(versions=('10.7', '10.8', '10.9'),
 def if_safe_multiprocessing_with_blas(func):
     """Decorator for tests involving both BLAS calls and multiprocessing
 
-    Under Python < 3.4 and POSIX (e.g. Linux or OSX), using multiprocessing in
-    conjunction with some implementation of BLAS (or other libraries that
-    manage an internal posix thread pool) can cause a crash or a freeze of the
-    Python process.
-
-    Under Python 3.4 and later, joblib uses the forkserver mode of
-    multiprocessing which does not trigger this problem.
+    Under POSIX (e.g. Linux or OSX), using multiprocessing in conjunction with
+    some implementation of BLAS (or other libraries that manage an internal
+    posix thread pool) can cause a crash or a freeze of the Python process.
 
     In practice all known packaged distributions (from Linux distros or
     Anaconda) of BLAS under Linux seems to be safe. So we this problem seems to
     only impact OSX users.
 
     This wrapper makes it possible to skip tests that can possibly cause
-    this crash under OSX with.
+    this crash under OS X with.
+
+    Under Python 3.4+ it is possible to use the `forkserver` start method
+    for multiprocessing to avoid this issue. However it can cause pickling
+    errors on interactively defined functions. It therefore not enabled by
+    default.
+
     """
     @wraps(func)
     def run_test(*args, **kwargs):
-        if sys.platform == 'darwin' and sys.version_info[:2] < (3, 4):
+        if sys.platform == 'darwin':
             raise SkipTest(
-                "Possible multi-process bug with some BLAS under Python < 3.4")
+                "Possible multi-process bug with some BLAS")
         return func(*args, **kwargs)
     return run_test
 
@@ -759,7 +774,7 @@ def check_skip_travis():
 
 def _delete_folder(folder_path, warn=False):
     """Utility function to cleanup a temporary folder if still existing.
-    Copy from joblib.pool (for independance)"""
+    Copy from joblib.pool (for independence)"""
     try:
         if os.path.exists(folder_path):
             # This can fail under windows,

@@ -1007,7 +1007,7 @@ def test_max_leaf_nodes():
 
 
 def test_max_leaf_nodes_max_depth():
-    # Test preceedence of max_leaf_nodes over max_depth.
+    # Test precedence of max_leaf_nodes over max_depth.
     X, y = datasets.make_hastie_10_2(n_samples=100, random_state=1)
     k = 4
     for name, TreeEstimator in ALL_TREES.items():
@@ -1436,10 +1436,10 @@ def test_decision_path():
 def check_no_sparse_y_support(name):
     X, y = X_multilabel, csr_matrix(y_multilabel)
     TreeEstimator = ALL_TREES[name]
-    assert_raises(ValueError, TreeEstimator(random_state=0).fit, X, y)
+    assert_raises(TypeError, TreeEstimator(random_state=0).fit, X, y)
 
 
 def test_no_sparse_y_support():
     # Currently we don't support sparse y
     for name in ALL_TREES:
-        yield (check_decision_path, name)
+        yield (check_no_sparse_y_support, name)

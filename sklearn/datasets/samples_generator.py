@@ -177,7 +177,7 @@ def make_classification(n_samples=100, n_features=20, n_informative=2,
     for i in range(n_samples - sum(n_samples_per_cluster)):
         n_samples_per_cluster[i % n_clusters] += 1
 
-    # Intialize X and y
+    # Initialize X and y
     X = np.zeros((n_samples, n_features))
     y = np.zeros(n_samples, dtype=np.int)
 
@@ -293,6 +293,9 @@ def make_multilabel_classification(n_samples=100, n_features=20, n_classes=5,
 
     sparse : bool, optional (default=False)
         If ``True``, return a sparse feature matrix
+
+        .. versionadded:: 0.17
+           parameter to allow *sparse* output.
 
     return_indicator : 'dense' (default) | 'sparse' | False
         If ``dense`` return ``Y`` in the dense binary indicator format. If
@@ -1193,7 +1196,8 @@ def make_sparse_spd_matrix(dim=1, alpha=0.95, norm_diag=False,
         The size of the random matrix to generate.
 
     alpha: float between 0 and 1, optional (default=0.95)
-        The probability that a coefficient is non zero (see notes).
+        The probability that a coefficient is zero (see notes). Larger values 
+        enforce more sparsity.
 
     random_state : int, RandomState instance or None, optional (default=None)
         If int, random_state is the seed used by the random number generator;

@@ -10,6 +10,7 @@ import numpy as np
 import numpy.linalg as la
 from scipy import sparse
 from distutils.version import LooseVersion
+from sklearn.externals.six import u
 
 from sklearn.utils import gen_batches
 
@@ -29,6 +30,7 @@ from sklearn.utils.testing import assert_warns_message
 from sklearn.utils.testing import assert_no_warnings
 from sklearn.utils.testing import ignore_warnings
 from sklearn.utils.testing import assert_allclose
+from sklearn.utils.testing import skip_if_32bit
 
 from sklearn.utils.sparsefuncs import mean_variance_axis
 from sklearn.preprocessing.data import _transform_selected
@@ -117,6 +119,30 @@ def test_polynomial_features():
     X_poly = interact.fit_transform(X)
     assert_array_almost_equal(X_poly, P2[:, [0, 1, 2, 4]])
 
+    assert_equal(interact.powers_.shape, (interact.n_output_features_,
+                 interact.n_input_features_))
+
+
+def test_polynomial_feature_names():
+    X = np.arange(30).reshape(10, 3)
+    poly = PolynomialFeatures(degree=2, include_bias=True).fit(X)
+    feature_names = poly.get_feature_names()
+    assert_array_equal(['1', 'x0', 'x1', 'x2', 'x0^2', 'x0 x1',
+                        'x0 x2', 'x1^2', 'x1 x2', 'x2^2'],
+                       feature_names)
+
+    poly = PolynomialFeatures(degree=3, include_bias=False).fit(X)
+    feature_names = poly.get_feature_names(["a", "b", "c"])
+    assert_array_equal(['a', 'b', 'c', 'a^2', 'a b', 'a c', 'b^2',
+                        'b c', 'c^2', 'a^3', 'a^2 b', 'a^2 c',
+                        'a b^2', 'a b c', 'a c^2', 'b^3', 'b^2 c',
+                        'b c^2', 'c^3'], feature_names)
+    # test some unicode
+    poly = PolynomialFeatures(degree=1, include_bias=True).fit(X)
+    feature_names = poly.get_feature_names([u"\u0001F40D", u"\u262E", u"\u05D0"])
+    assert_array_equal([u"1", u"\u0001F40D", u"\u262E", u"\u05D0"],
+                       feature_names)
+
 
 def test_standard_scaler_1d():
     # Test scaling of dataset along single axis
@@ -171,6 +197,7 @@ def test_scale_1d():
         assert_array_equal(scale(X, with_mean=False, with_std=False), X)
 
 
+@skip_if_32bit
 def test_standard_scaler_numerical_stability():
     """Test numerical stability of scaling"""
     # np.log(1e-5) is taken because of its floating point representation
@@ -436,7 +463,7 @@ def test_standard_scaler_trasform_with_partial_fit():
     scaler_incr = StandardScaler()
     for i, batch in enumerate(gen_batches(X.shape[0], 1)):
 
-        X_sofar = X[:(i+1), :]
+        X_sofar = X[:(i + 1), :]
         chunks_copy = X_sofar.copy()
         scaled_batch = StandardScaler().fit_transform(X_sofar)
 
@@ -784,6 +811,20 @@ def test_robust_scaler_2d_arrays():
     assert_array_almost_equal(X_scaled.std(axis=0)[0], 0)
 
 
+def test_robust_scaler_transform_one_row_csr():
+    # Check RobustScaler on transforming csr matrix with one row
+    rng = np.random.RandomState(0)
+    X = rng.randn(4, 5)
+    single_row = np.array([[0.1, 1., 2., 0., -1.]])
+    scaler = RobustScaler(with_centering=False)
+    scaler = scaler.fit(X)
+    row_trans = scaler.transform(sparse.csr_matrix(single_row))
+    row_expected = single_row / scaler.scale_
+    assert_array_almost_equal(row_trans.toarray(), row_expected)
+    row_scaled_back = scaler.inverse_transform(row_trans)
+    assert_array_almost_equal(single_row, row_scaled_back.toarray())
+
+
 def test_robust_scaler_iris():
     X = iris.data
     scaler = RobustScaler()
@@ -827,7 +868,7 @@ def test_scale_function_without_centering():
 
     # null scale
     X_csr_scaled = scale(X_csr, with_mean=False, with_std=False, copy=True)
-    assert_array_almost_equal(X_csr.data, X_csr_scaled.data)
+    assert_array_almost_equal(X_csr.toarray(), X_csr_scaled.toarray())
 
 
 def test_robust_scale_axis1():
@@ -922,7 +963,7 @@ def test_maxabs_scaler_zero_variance_features():
 
 
 def test_maxabs_scaler_large_negative_value():
-    """Check MaxAbsScaler on toy data with a large negative value"""
+    # Check MaxAbsScaler on toy data with a large negative value
     X = [[0., 1.,   +0.5, -1.0],
          [0., 1.,   -0.3, -0.5],
          [0., 1., -100.0,  0.0],
@@ -938,7 +979,7 @@ def test_maxabs_scaler_large_negative_value():
 
 
 def test_maxabs_scaler_transform_one_row_csr():
-    """Check MaxAbsScaler on transforming csr matrix with one row"""
+    # Check MaxAbsScaler on transforming csr matrix with one row
     X = sparse.csr_matrix([[0.5, 1., 1.]])
     scaler = MaxAbsScaler()
     scaler = scaler.fit(X)
@@ -956,13 +997,13 @@ def test_deprecation_minmax_scaler():
     scaler = MinMaxScaler().fit(X)
 
     depr_message = ("Attribute data_range will be removed in "
-                    "0.19. Use data_range_ instead")
+                    "0.19. Use ``data_range_`` instead")
     data_range = assert_warns_message(DeprecationWarning, depr_message,
                                       getattr, scaler, "data_range")
     assert_array_equal(data_range, scaler.data_range)
 
     depr_message = ("Attribute data_min will be removed in "
-                    "0.19. Use data_min_ instead")
+                    "0.19. Use ``data_min_`` instead")
     data_min = assert_warns_message(DeprecationWarning, depr_message,
                                     getattr, scaler, "data_min")
     assert_array_equal(data_min, scaler.data_min)
@@ -1322,8 +1363,8 @@ def test_deprecation_standard_scaler():
     rng = np.random.RandomState(0)
     X = rng.random_sample((5, 4))
     scaler = StandardScaler().fit(X)
-    depr_message = ("Function std_ is deprecated; Attribute std_ will be "
-                    "removed in 0.19. Use scale_ instead")
+    depr_message = ("Function std_ is deprecated; Attribute ``std_`` will be "
+                    "removed in 0.19. Use ``scale_`` instead")
     std_ = assert_warns_message(DeprecationWarning, depr_message, getattr,
                                 scaler, "std_")
     assert_array_equal(std_, scaler.scale_)
@@ -1391,6 +1432,8 @@ def test_one_hot_encoder_sparse():
     # test that an error is raised when out of bounds:
     X_too_large = [[0, 2, 1], [0, 1, 1]]
     assert_raises(ValueError, enc.transform, X_too_large)
+    error_msg = "unknown categorical feature present \[2\] during transform."
+    assert_raises_regex(ValueError, error_msg, enc.transform, X_too_large)
     assert_raises(ValueError, OneHotEncoder(n_values=2).fit_transform, X)
 
     # test that error is raised when wrong number of features
@@ -1503,8 +1546,7 @@ def test_one_hot_encoder_unknown_transform():
     oh.fit(X)
     assert_array_equal(
         oh.transform(y).toarray(),
-        np.array([[0.,  0.,  0.,  0.,  1.,  0.,  0.]])
-        )
+        np.array([[0.,  0.,  0.,  0.,  1.,  0.,  0.]]))
 
     # Raise error if handle_unknown is neither ignore or error.
     oh = OneHotEncoder(handle_unknown='42')

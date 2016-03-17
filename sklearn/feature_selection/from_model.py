@@ -146,6 +146,8 @@ class _LearntSelectorMixin(TransformerMixin):
 class SelectFromModel(BaseEstimator, SelectorMixin):
     """Meta-transformer for selecting features based on importance weights.
 
+    .. versionadded:: 0.17
+
     Parameters
     ----------
     estimator : object
@@ -160,7 +162,7 @@ class SelectFromModel(BaseEstimator, SelectorMixin):
         the median (resp. the mean) of the feature importances. A scaling
         factor (e.g., "1.25*mean") may also be used. If None and if the
         estimator has a parameter penalty set to l1, either explicitly
-        or implicity (e.g, Lasso), the threshold is used is 1e-5.
+        or implicitly (e.g, Lasso), the threshold is used is 1e-5.
         Otherwise, "mean" is used by default.
 
     prefit : bool, default False

@@ -10,7 +10,7 @@ are supervised learning methods based on applying Bayes' theorem with strong
 #         Minor fixes by Fabian Pedregosa
 #         Amit Aides <amitibo@tx.technion.ac.il>
 #         Yehuda Finkelstein <yehudaf@tx.technion.ac.il>
-#         Lars Buitinck <L.J.Buitinck@uva.nl>
+#         Lars Buitinck
 #         Jan Hendrik Metzen <jhm@informatik.uni-bremen.de>
 #         (parts based on earlier work by Mathieu Blondel)
 #
@@ -162,6 +162,9 @@ class GaussianNB(BaseNB):
         sample_weight : array-like, shape (n_samples,), optional
             Weights applied to individual samples (1. for unweighted).
 
+            .. versionadded:: 0.17
+               Gaussian Naive Bayes supports fitting with *sample_weight*.
+
         Returns
         -------
         self : object
@@ -278,6 +281,8 @@ class GaussianNB(BaseNB):
 
         sample_weight : array-like, shape (n_samples,), optional
             Weights applied to individual samples (1. for unweighted).
+
+            .. versionadded:: 0.17
 
         Returns
         -------

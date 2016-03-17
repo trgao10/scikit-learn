@@ -14,7 +14,8 @@ Multiclass and multilabel algorithms
 
 The :mod:`sklearn.multiclass` module implements *meta-estimators* to solve
 ``multiclass`` and ``multilabel`` classification problems
-by decomposing such problems into binary classification problems.
+by decomposing such problems into binary classification problems. Multitarget
+regression is also supported.
 
   - **Multiclass classification** means a classification task with more than
     two classes; e.g., classify a set of images of fruits which may be oranges,
@@ -27,6 +28,11 @@ by decomposing such problems into binary classification problems.
     that are not mutually exclusive, such as topics that are relevant for a
     document. A text might be about any of religion, politics, finance or
     education at the same time or none of these.
+
+  - **Multioutput regression** assigns each sample a set of target
+    values.  This can be thought of as predicting several properties
+    for each data-point, such as wind direction and magnitude at a
+    certain location.
 
   - **Multioutput-multiclass classification** and **multi-task classification**
     means that a single estimator has to handle
@@ -66,8 +72,7 @@ if you're using one of these unless you want custom multiclass behavior:
     setting ``multi_class='multinomial'`` in
     :class:`sklearn.linear_model.LogisticRegression`.
   - Support multilabel: :ref:`Decision Trees <tree>`,
-    :ref:`Random Forests <forest>`, :ref:`Nearest Neighbors <neighbors>`,
-    :ref:`Ridge Regression <ridge_regression>`.
+    :ref:`Random Forests <forest>`, :ref:`Nearest Neighbors <neighbors>`.
   - One-Vs-One: :class:`sklearn.svm.SVC`.
   - One-Vs-All: all linear models except :class:`sklearn.svm.SVC`.
 
@@ -215,7 +220,7 @@ code book. The code size is the dimensionality of the aforementioned space.
 Intuitively, each class should be represented by a code as unique as
 possible and a good code book should be designed to optimize classification
 accuracy. In this implementation, we simply use a randomly-generated code
-book as advocated in [2]_ although more elaborate methods may be added in the
+book as advocated in [3]_ although more elaborate methods may be added in the
 future.
 
 At fitting time, one binary classifier per bit in the code book is fitted.
@@ -262,16 +267,45 @@ Below is an example of multiclass learning using Output-Codes::
 
 .. topic:: References:
 
-    .. [1] "Solving multiclass learning problems via error-correcting output codes",
+    .. [2] "Solving multiclass learning problems via error-correcting output codes",
         Dietterich T., Bakiri G.,
         Journal of Artificial Intelligence Research 2,
         1995.
 
-    .. [2] "The error coding method and PICTs",
+    .. [3] "The error coding method and PICTs",
         James G., Hastie T.,
         Journal of Computational and Graphical statistics 7,
         1998.
 
-    .. [3] "The Elements of Statistical Learning",
+    .. [4] "The Elements of Statistical Learning",
         Hastie T., Tibshirani R., Friedman J., page 606 (second-edition)
         2008.
+
+Multioutput regression
+======================
+
+Multioutput regression support can be added to any regressor with
+:class:`MultiOutputRegressor`.  This strategy consists of fitting one
+regressor per target. Since each target is represented by exactly one
+regressor it is possible to gain knowledge about the target by
+inspecting its corresponding regressor. As
+:class:`MultiOutputRegressor` fits one regressor per target it can not
+take advantage of correlations between targets.
+
+Below is an example of multioutput regression:
+
+  >>> from sklearn.datasets import make_regression
+  >>> from sklearn.multioutput import MultiOutputRegressor
+  >>> from sklearn.ensemble import GradientBoostingRegressor
+  >>> X, y = make_regression(n_samples=10, n_targets=3, random_state=1)
+  >>> MultiOutputRegressor(GradientBoostingRegressor(random_state=0)).fit(X, y).predict(X)
+  array([[-154.75474165, -147.03498585,  -50.03812219],
+         [   7.12165031,    5.12914884,  -81.46081961],
+         [-187.8948621 , -100.44373091,   13.88978285],
+         [-141.62745778,   95.02891072, -191.48204257],
+         [  97.03260883,  165.34867495,  139.52003279],
+         [ 123.92529176,   21.25719016,   -7.84253   ],
+         [-122.25193977,  -85.16443186, -107.12274212],
+         [ -30.170388  ,  -94.80956739,   12.16979946],
+         [ 140.72667194,  176.50941682,  -17.50447799],
+         [ 149.37967282,  -81.15699552,   -5.72850319]])

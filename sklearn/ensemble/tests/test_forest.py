@@ -29,6 +29,7 @@ from sklearn.utils.testing import assert_greater_equal
 from sklearn.utils.testing import assert_raises
 from sklearn.utils.testing import assert_warns
 from sklearn.utils.testing import ignore_warnings
+from sklearn.utils.testing import skip_if_32bit
 
 from sklearn import datasets
 from sklearn.decomposition import TruncatedSVD
@@ -196,7 +197,7 @@ def test_probability():
         yield check_probability, name
 
 
-def check_importances(X, y, name, criterion):
+def check_importances(name, criterion, X, y):
     ForestEstimator = FOREST_ESTIMATORS[name]
 
     est = ForestEstimator(n_estimators=20, criterion=criterion,
@@ -233,6 +234,7 @@ def check_importances(X, y, name, criterion):
         assert_less(np.abs(importances - importances_bis).mean(), 0.001)
 
 
+@skip_if_32bit
 def test_importances():
     X, y = datasets.make_classification(n_samples=500, n_features=10,
                                         n_informative=3, n_redundant=0,
@@ -240,10 +242,10 @@ def test_importances():
                                         random_state=0)
 
     for name, criterion in product(FOREST_CLASSIFIERS, ["gini", "entropy"]):
-        yield check_importances, X, y, name, criterion
+        yield check_importances, name, criterion, X, y
 
     for name, criterion in product(FOREST_REGRESSORS, ["mse", "friedman_mse"]):
-        yield check_importances, X, y, name, criterion
+        yield check_importances, name, criterion, X, y
 
 
 def test_importances_asymptotic():
@@ -564,6 +566,8 @@ def test_random_trees_dense_equal():
     assert_array_equal(X_transformed_sparse.toarray(), X_transformed_dense)
 
 
+# Ignore warnings from switching to more power iterations in randomized_svd
+@ignore_warnings
 def test_random_hasher():
     # test random forest hashing on circles dataset
     # make sure that it is linearly separable.

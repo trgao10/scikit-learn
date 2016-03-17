@@ -1014,7 +1014,7 @@ class BaseGradientBoosting(six.with_metaclass(ABCMeta, BaseEnsemble,
         elif presort == 'auto':
             presort = True
 
-        if self.presort == True:
+        if presort == True:
             if issparse(X):
                 raise ValueError("Presorting is not supported for sparse matrices.")
             else:
@@ -1227,6 +1227,8 @@ class BaseGradientBoosting(six.with_metaclass(ABCMeta, BaseEnsemble,
     def apply(self, X):
         """Apply trees in the ensemble to X, return leaf indices.
 
+        .. versionadded:: 0.17
+
         Parameters
         ----------
         X : array-like or sparse matrix, shape = [n_samples, n_features]
@@ -1238,7 +1240,7 @@ class BaseGradientBoosting(six.with_metaclass(ABCMeta, BaseEnsemble,
         -------
         X_leaves : array_like, shape = [n_samples, n_estimators, n_classes]
             For each datapoint x in X and for each tree in the ensemble,
-            return the index of the leaf x ends up in in each estimator.
+            return the index of the leaf x ends up in each estimator.
             In the case of binary classification n_classes is 1.
         """
 
@@ -1373,6 +1375,9 @@ class GradientBoostingClassifier(BaseGradientBoosting, ClassifierMixin):
         fitting. Auto mode by default will use presorting on dense data and
         default to normal sorting on sparse data. Setting presort to true on
         sparse data will raise an error.
+
+        .. versionadded:: 0.17
+           *presort* parameter.
 
     Attributes
     ----------
@@ -1720,6 +1725,9 @@ class GradientBoostingRegressor(BaseGradientBoosting, RegressorMixin):
         default to normal sorting on sparse data. Setting presort to true on
         sparse data will raise an error.
 
+        .. versionadded:: 0.17
+           optional parameter *presort*.
+
     Attributes
     ----------
     feature_importances_ : array, shape = [n_features]
@@ -1779,7 +1787,7 @@ class GradientBoostingRegressor(BaseGradientBoosting, RegressorMixin):
             max_features=max_features,
             random_state=random_state, alpha=alpha, verbose=verbose,
             max_leaf_nodes=max_leaf_nodes, warm_start=warm_start,
-            presort='auto')
+            presort=presort)
 
     def predict(self, X):
         """Predict regression target for X.
@@ -1819,6 +1827,8 @@ class GradientBoostingRegressor(BaseGradientBoosting, RegressorMixin):
     def apply(self, X):
         """Apply trees in the ensemble to X, return leaf indices.
 
+        .. versionadded:: 0.17
+
         Parameters
         ----------
         X : array-like or sparse matrix, shape = [n_samples, n_features]
@@ -1830,7 +1840,7 @@ class GradientBoostingRegressor(BaseGradientBoosting, RegressorMixin):
         -------
         X_leaves : array_like, shape = [n_samples, n_estimators]
             For each datapoint x in X and for each tree in the ensemble,
-            return the index of the leaf x ends up in in each estimator.
+            return the index of the leaf x ends up in each estimator.
         """
 
         leaves = super(GradientBoostingRegressor, self).apply(X)

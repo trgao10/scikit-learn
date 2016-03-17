@@ -21,7 +21,6 @@ optimization.
 
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple
-import inspect
 import math
 
 import numpy as np
@@ -33,13 +32,14 @@ from ..externals import six
 from ..base import clone
 from sklearn.externals.funcsigs import signature
 
+
 class Hyperparameter(namedtuple('Hyperparameter',
                                 ('name', 'value_type', 'bounds',
                                  'n_elements', 'fixed'))):
     """A kernel hyperparameter's specification in form of a namedtuple.
 
-    Entries
-    -------
+    Attributes
+    ----------
     name : string
         The name of the hyperparameter. Note that a kernel using a
         hyperparameter with name "x" must have the attributes self.x and
@@ -77,7 +77,7 @@ class Hyperparameter(namedtuple('Hyperparameter',
     __slots__ = ()
 
     def __new__(cls, name, value_type, bounds, n_elements=1, fixed=None):
-        if bounds != "fixed":
+        if not isinstance(bounds, six.string_types) or bounds != "fixed":
             bounds = np.atleast_2d(bounds)
             if n_elements > 1:  # vector-valued parameter
                 if bounds.shape[0] == 1:
@@ -88,7 +88,7 @@ class Hyperparameter(namedtuple('Hyperparameter',
                                      % (name, n_elements, bounds.shape[0]))
 
         if fixed is None:
-            fixed = (bounds == "fixed")
+            fixed = isinstance(bounds, six.string_types) and bounds == "fixed"
         return super(Hyperparameter, cls).__new__(
             cls, name, value_type, bounds, n_elements, fixed)
 
@@ -405,7 +405,7 @@ class CompoundKernel(Kernel):
         """
         k_dims = self.k1.n_dims
         for i, kernel in enumerate(self.kernels):
-            kernel.theta = theta[i*k_dims:(i+1)*k_dims]
+            kernel.theta = theta[i * k_dims:(i + 1) * k_dims]
 
     @property
     def bounds(self):
@@ -1316,7 +1316,7 @@ class Matern(RBF):
                     3 * D * np.exp(-np.sqrt(3 * D.sum(-1)))[..., np.newaxis]
             elif self.nu == 2.5:
                 tmp = np.sqrt(5 * D.sum(-1))[..., np.newaxis]
-                K_gradient = 5.0/3.0 * D * (tmp + 1) * np.exp(-tmp)
+                K_gradient = 5.0 / 3.0 * D * (tmp + 1) * np.exp(-tmp)
             else:
                 # approximate gradient numerically
                 def f(theta):  # helper function
